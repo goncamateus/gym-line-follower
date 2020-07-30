@@ -28,8 +28,8 @@ class LineFollowerEnv(gym.Env):
 
     SUPPORTED_OBSV_TYPE = ["points_visible", "points_latch", "points_latch_bool", "camera"]
 
-    def __init__(self, gui=True, nb_cam_pts=8, sub_steps=10, sim_time_step=1 / 250,
-                 max_track_err=0.3, power_limit=0.4, max_time=60, config=None, randomize=True, obsv_type="points_latch",
+    def __init__(self, gui=False, nb_cam_pts=8, sub_steps=10, sim_time_step=1 / 250,
+                 max_track_err=0.05, power_limit=0.99, max_time=60, config=None, randomize=True, obsv_type="points_latch",
                  track=None, track_render_params=None):
         """
         Create environment.
@@ -124,7 +124,7 @@ class LineFollowerEnv(gym.Env):
         self.plot = None
         self.seed()
 
-    def reset(self):
+    def reset(self, do_rand=True):
         self.step_counter = 0
         self.config.randomize()
 
@@ -132,18 +132,18 @@ class LineFollowerEnv(gym.Env):
         self.pb_client.setTimeStep(self.sim_time_step)
         self.pb_client.setGravity(0, 0, -9.81)
 
-        if self.randomize:
+        if self.randomize and do_rand:
             if self.track_render_params:
                 self.track_render_params.randomize()
 
         if self.preset_track:
             self.track = self.preset_track
         else:
-            self.track = Track.generate(1.75, hw_ratio=0.7, seed=None if self.randomize else 4125,
+            self.track = Track.generate(1.75, hw_ratio=0.7, seed=None if self.randomize and do_rand else 4125,
                                         spikeyness=0.3, nb_checkpoints=500, render_params=self.track_render_params)
 
         start_yaw = self.track.start_angle
-        if self.randomize:
+        if self.randomize and do_rand:
             start_yaw += np.random.uniform(-0.2, 0.2)
 
         build_track_plane(self.track, width=3, height=2.5, ppm=1500, path=self.local_dir)
@@ -226,7 +226,7 @@ class LineFollowerEnv(gym.Env):
             done = True
             print("PROGRESS DISTANCE LIMIT")
         elif track_err > self.max_track_err:
-            reward = -100.
+            reward = -100
             done = True
             print("TRACK DISTANCE LIMIT")
         elif self.step_counter > self.max_steps:
