@@ -27,3 +27,7 @@ class BulletClient(object):
         if inspect.isbuiltin(attribute):
             attribute = functools.partial(attribute, physicsClientId=self._client)
         return attribute
+    
+    def close(self):
+        self.__del__()
+        return
