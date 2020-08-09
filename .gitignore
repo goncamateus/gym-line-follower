@@ -1,0 +1,3 @@
+*.pyc
+gym_line_follower.egg-info
+*pycache
