@@ -1,3 +1,4 @@
 *.pyc
 gym_line_follower.egg-info
 *pycache
+gym_line_follower/track_texture.generated.png
