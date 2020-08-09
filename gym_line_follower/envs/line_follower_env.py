@@ -176,7 +176,7 @@ class LineFollowerEnv(gym.Env):
             obsv = self.follower_bot.step(self.track)
             if self.obsv_type == "latch_bool":
                 obsv = [obsv, 1.]
-            return obsv
+            return np.array(obsv)
 
     def get_track_err(self):
         track_err = self.track.distance_from_point(self.follower_bot.pos[0])
@@ -188,7 +188,7 @@ class LineFollowerEnv(gym.Env):
 
     def bot_angle(self):
         return self._get_info()['yaw']
-    
+
     def bot_angle_deg(self):
         return np.degrees(self._get_info()['yaw'])
 
@@ -248,11 +248,11 @@ class LineFollowerEnv(gym.Env):
             done = True
             print("TRACK DONE")
         elif abs(self.position_on_track - self.track.progress) > 0.5:
-            reward = -100
+            reward += -100
             done = True
             print("PROGRESS DISTANCE LIMIT")
         elif track_err > self.max_track_err:
-            reward = -100
+            reward += -100
             done = True
             print("TRACK DISTANCE LIMIT")
         elif self.step_counter > self.max_steps:
@@ -262,6 +262,7 @@ class LineFollowerEnv(gym.Env):
         info = self._get_info()
         self.step_counter += 1
         self.done = done
+        observation = np.array(observation)
         return observation, reward, done, info
 
     def render(self, mode='human'):
@@ -304,6 +305,8 @@ class LineFollowerEnv(gym.Env):
                          "track_ref_line": track_ref_line,
                          "vis_pts_line": vis_pts_line,
                          "progress_line": progress_line}
+            fig.canvas.draw()
+            plt.show(block=False)
 
         if mode in ["human", "rgb_array"]:
             # Plot data
@@ -337,7 +340,7 @@ class LineFollowerEnv(gym.Env):
                 self.track.pts[0:self.track.progress_idx, 1])
 
         if mode == "human":
-            plt.draw()
+            self.plot["fig"].canvas.draw()
         elif mode == "rgb_array":
             img = fig2rgb_array(self.plot["fig"])
             return img
@@ -380,6 +383,170 @@ class LineFollowerCameraEnv(LineFollowerEnv):
 
     def __init__(self):
         super(LineFollowerCameraEnv, self).__init__(obsv_type="camera")
+
+
+class LineFollowerGoalEnv(LineFollowerEnv):
+
+    def __init__(self, reward_type='sparse', distance_threshold=0.01):
+        super(LineFollowerGoalEnv, self).__init__()
+        self.reward_type = reward_type
+        self.distance_threshold = distance_threshold
+
+    def get_achieved_goal(self):
+        return np.array([self.bot_pos()[0],
+                         self.bot_pos()[1],
+                         self.bot_angle_deg()])
+
+    def get_desired_goal(self):
+        x = self.track.x[self.track.next_checkpoint_idx]
+        y = self.track.y[self.track.next_checkpoint_idx]
+        # chkpt = self.track.checkpoints[self.track.next_checkpoint_idx]
+        # idx = np.where(self.track.x == x)[0][0]
+        des_ang = self.track.angle_at_index(self.track.next_checkpoint_idx)
+        des_ang = np.degrees(des_ang)
+        return np.array([x, y, des_ang])
+
+    def compute_reward(self, achieved_goal, goal, info):
+        angle_diff = np.linalg.norm(achieved_goal[-1] - goal[-1])
+        d = np.linalg.norm(achieved_goal[:-1] - goal[:-1], axis=-1)
+        if self.reward_type == 'sparse':
+            ret = angle_diff > 5 or d > self.distance_threshold
+            ret = 1 if ret else -1
+            ret = -100*ret
+            return ret
+        else:
+            return -d - angle_diff
+    
+    def _reset(self, do_rand=True):
+        self.step_counter = 0
+        self.config.randomize()
+
+        self.pb_client.resetSimulation()
+        self.pb_client.setTimeStep(self.sim_time_step)
+        self.pb_client.setGravity(0, 0, -9.81)
+
+        if self.randomize and do_rand:
+            if self.track_render_params:
+                self.track_render_params.randomize()
+
+        if self.preset_track:
+            self.track = self.preset_track
+        else:
+            self.track = Track.generate(1.75, hw_ratio=0.7, seed=None if self.randomize and do_rand else 4125,
+                                        spikeyness=0.3, nb_checkpoints=500, render_params=self.track_render_params)
+
+        start_yaw = self.track.start_angle
+        if self.randomize and do_rand:
+            start_yaw += np.random.uniform(-0.2, 0.2)
+
+        build_track_plane(self.track, width=3, height=2.5,
+                          ppm=1500, path=self.local_dir)
+        self.pb_client.loadURDF(os.path.join(
+            self.local_dir, "track_plane.urdf"))
+        self.follower_bot = LineFollowerBot(self.pb_client, self.nb_cam_pts, self.track.start_xy, start_yaw,
+                                            self.config, obsv_type=self.obsv_type)
+
+        self.position_on_track = 0.
+
+        if self.plot:
+            plt.close(self.plot["fig"])
+            self.plot = None
+
+        self.done = False
+
+        obsv = self.follower_bot.step(self.track)
+        if len(obsv) < 1:
+            return self._reset()  # TODO: maybe add recursion limit
+        else:
+            obsv = self.follower_bot.step(self.track)
+            if self.obsv_type == "latch_bool":
+                obsv = [obsv, 1.]
+            return np.array(obsv)
+
+    def reset(self):
+        return {'observation': self._reset(),
+                'achieved_goal': self.get_achieved_goal(),
+                'desired_goal': self.get_desired_goal()}
+
+    def step(self, action):
+        action = self.speed_limit * np.array(action)
+
+        if self.done:
+            warnings.warn("Calling step() on done environment.")
+
+        reward = 0.
+
+        for _ in range(self.sub_steps):
+            self.follower_bot.apply_action(action)
+            self.pb_client.stepSimulation()
+
+        # Bot position updated here so it must be first!
+        observation = self.follower_bot.step(self.track)
+
+        if self.obsv_type == "points_visible":
+            self.observation = observation
+
+        elif self.obsv_type == "points_latch":
+            if len(observation) == 0:
+                observation = self.observation
+            else:
+                self.observation = observation
+
+        elif self.obsv_type == "points_latch_bool":
+            if len(observation) == 0:
+                observation = [self.observation, 0.]
+            else:
+                self.observation = observation
+                observation = [observation, 1.]
+
+        elif self.obsv_type == "camera":
+            self.observation = observation
+
+        # Track distance error
+        track_err_norm, track_err = self.get_track_err()
+
+        self.position_on_track += self.track.length_along_track(
+            self.follower_bot.prev_pos[0], self.follower_bot.pos[0])
+
+        # Track progress
+        checkpoint_reward = 1000. / self.track.nb_checkpoints
+        if self.position_on_track - self.track.progress < 0.4:
+            checkpoints_reached = self.track.update_progress(
+                self.position_on_track)
+            reward += checkpoints_reached * \
+                checkpoint_reward * (1.0 - track_err_norm) ** 2
+
+        # Time penalty
+        reward -= 0.2
+
+        done = False
+        if self.track.done:
+            done = True
+            print("TRACK DONE")
+        elif abs(self.position_on_track - self.track.progress) > 0.5:
+            reward += -100
+            done = True
+            print("PROGRESS DISTANCE LIMIT")
+        elif track_err > self.max_track_err:
+            reward += -100
+            done = True
+            print("TRACK DISTANCE LIMIT")
+        elif self.step_counter > self.max_steps:
+            done = True
+            print("TIME LIMIT")
+
+        info = self._get_info()
+        self.step_counter += 1
+        self.done = done
+        observation = np.array(observation)
+        state = {
+            'observation': observation,
+            'achieved_goal': self.get_achieved_goal(),
+            'desired_goal': self.get_desired_goal()
+        }
+        reward = 0 if (self.reward_type == 'sparse' and not done) else reward
+
+        return state, reward, done, info
 
 
 if __name__ == '__main__':
