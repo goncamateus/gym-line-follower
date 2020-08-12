@@ -394,23 +394,17 @@ class LineFollowerGoalEnv(LineFollowerEnv):
 
     def get_achieved_goal(self):
         return np.array([self.bot_pos()[0],
-                         self.bot_pos()[1],
-                         self.bot_angle_deg()])
+                         self.bot_pos()[1]])
 
     def get_desired_goal(self):
         x = self.track.x[self.track.next_checkpoint_idx]
         y = self.track.y[self.track.next_checkpoint_idx]
-        # chkpt = self.track.checkpoints[self.track.next_checkpoint_idx]
-        # idx = np.where(self.track.x == x)[0][0]
-        des_ang = self.track.angle_at_index(self.track.next_checkpoint_idx)
-        des_ang = np.degrees(des_ang)
-        return np.array([x, y, des_ang])
+        return np.array([x, y])
 
     def compute_reward(self, achieved_goal, goal, info):
-        angle_diff = np.linalg.norm(achieved_goal[-1] - goal[-1])
-        d = np.linalg.norm(achieved_goal[:-1] - goal[:-1], axis=-1)
+        d = np.linalg.norm(achieved_goal - goal, axis=-1)
         if self.reward_type == 'sparse':
-            ret = angle_diff > 5 or d > self.distance_threshold
+            ret = d > self.distance_threshold
             ret = 1 if ret else -1
             ret = -100*ret
             return ret
