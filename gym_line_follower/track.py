@@ -172,7 +172,7 @@ class Track:
 
     @classmethod
     def generate(cls, approx_width=1., hw_ratio=0.5, seed=None, irregularity=0.2,
-                 spikeyness=0.2, num_verts=10, *args, **kwargs):
+                 spikeyness=0.06, num_verts=10, *args, **kwargs):
         """
         Generate random track.
         Adapted from: https://stackoverflow.com/a/45618741/9908077
@@ -517,7 +517,7 @@ if __name__ == '__main__':
 
     for i in range(9):
         t = Track.generate(2.0, hw_ratio=0.7, seed=None,
-                           spikeyness=0.2, nb_checkpoints=500)
+                           spikeyness=0.06, nb_checkpoints=500)
         img = t.render(ppm=1000)
         plt.subplot(3, 3, i+1)
         plt.imshow(img)
