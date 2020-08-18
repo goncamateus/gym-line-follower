@@ -427,7 +427,7 @@ class LineFollowerGoalEnv(LineFollowerEnv):
             self.track = self.preset_track
         else:
             self.track = Track.generate(1.75, hw_ratio=0.7, seed=None if self.randomize and do_rand else 4125,
-                                        spikeyness=0.3, nb_checkpoints=500, render_params=self.track_render_params)
+                                        spikeyness=0.06, nb_checkpoints=500, render_params=self.track_render_params)
 
         start_yaw = self.track.start_angle
         if self.randomize and do_rand:
