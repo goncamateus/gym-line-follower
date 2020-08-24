@@ -516,18 +516,18 @@ class LineFollowerGoalEnv(LineFollowerEnv):
         done = False
         if self.track.done:
             done = True
-            # print("TRACK DONE")
+            print("TRACK DONE")
         elif abs(self.position_on_track - self.track.progress) > 0.5:
             reward += -100
             done = True
-            # print("PROGRESS DISTANCE LIMIT")
+            print("PROGRESS DISTANCE LIMIT")
         elif track_err > self.max_track_err:
             reward += -100
             done = True
-            # print("TRACK DISTANCE LIMIT")
+            print("TRACK DISTANCE LIMIT")
         elif self.step_counter > self.max_steps:
             done = True
-            # print("TIME LIMIT")
+            print("TIME LIMIT")
 
         info = self._get_info()
         self.step_counter += 1

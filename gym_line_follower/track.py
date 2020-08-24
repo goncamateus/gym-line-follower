@@ -186,17 +186,17 @@ class Track:
         upscale = 1000.  # upscale so curve gen fun works
         r = upscale * approx_width / 2.
         pts = generate_polygon(0, 0, r, irregularity=irregularity, spikeyness=spikeyness, numVerts=num_verts)
-        pts = [[ 100.,    0.],
-               [  50.,  300.],
-               [-200.,  100.],
-               [-300.,    0.],
-               [-300., -100.],
-               [-200., -200.],
-               [-100., -300.],
-               [-200., -500.],
-               [-300., -600.],
-               [-150., -700.]]
-        pts = np.array(pts)*3
+        # pts = [[ 100.,    0.],
+        #        [  50.,  300.],
+        #        [-200.,  100.],
+        #        [-300.,    0.],
+        #        [-300., -100.],
+        #        [-200., -200.],
+        #        [-100., -300.],
+        #        [-200., -500.],
+        #        [-300., -600.],
+        #        [-150., -700.]]
+        pts = np.array(pts)
         # Generate curve with points
         x, y, _ = get_bezier_curve(pts, rad=0.4, edgy=0)
         # Remove duplicated point
@@ -209,13 +209,13 @@ class Track:
         # Scale units
         unit_scale = 1000
         x, y = x / unit_scale, y / unit_scale
-        # pts = np.stack((x, y), axis=-1)
+        pts = np.stack((x, y), axis=-1)
+        # pts = np.stack((y+0.4, x+0.6), axis=-1)
 
         # # Check width / height:
-        # if max(abs(min(x)), max(x)) * 2 > 1.5 * approx_width or max(abs(min(y)), max(y)) * 2 > 1.5 * approx_width * hw_ratio:
-        pts = np.stack((y+0.4, x+0.6), axis=-1)
-        #     raise ValueError
-        #     return cls.generate(approx_width, hw_ratio, seed, irregularity, spikeyness, num_verts, *args, **kwargs)
+        if max(abs(min(x)), max(x)) * 2 > 1.5 * approx_width or max(abs(min(y)), max(y)) * 2 > 1.5 * approx_width * hw_ratio:
+            raise ValueError
+            return cls.generate(approx_width, hw_ratio, seed, irregularity, spikeyness, num_verts, *args, **kwargs)
 
         # Randomly flip track direction
         # np.random.seed(seed)
