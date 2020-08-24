@@ -171,8 +171,8 @@ class Track:
         self.done = False
 
     @classmethod
-    def generate(cls, approx_width=1., hw_ratio=0.5, seed=None, irregularity=0.2,
-                 spikeyness=0.06, num_verts=10, *args, **kwargs):
+    def generate(cls, approx_width=1., hw_ratio=0.5, seed=None, irregularity=0.5,
+                 spikeyness=0.2, num_verts=15, *args, **kwargs):
         """
         Generate random track.
         Adapted from: https://stackoverflow.com/a/45618741/9908077
@@ -186,16 +186,6 @@ class Track:
         upscale = 1000.  # upscale so curve gen fun works
         r = upscale * approx_width / 2.
         pts = generate_polygon(0, 0, r, irregularity=irregularity, spikeyness=spikeyness, numVerts=num_verts)
-        # pts = [[ 100.,    0.],
-        #        [  50.,  300.],
-        #        [-200.,  100.],
-        #        [-300.,    0.],
-        #        [-300., -100.],
-        #        [-200., -200.],
-        #        [-100., -300.],
-        #        [-200., -500.],
-        #        [-300., -600.],
-        #        [-150., -700.]]
         pts = np.array(pts)
         # Generate curve with points
         x, y, _ = get_bezier_curve(pts, rad=0.4, edgy=0)
@@ -210,11 +200,9 @@ class Track:
         unit_scale = 1000
         x, y = x / unit_scale, y / unit_scale
         pts = np.stack((x, y), axis=-1)
-        # pts = np.stack((y+0.4, x+0.6), axis=-1)
 
         # # Check width / height:
         if max(abs(min(x)), max(x)) * 2 > 1.5 * approx_width or max(abs(min(y)), max(y)) * 2 > 1.5 * approx_width * hw_ratio:
-            raise ValueError
             return cls.generate(approx_width, hw_ratio, seed, irregularity, spikeyness, num_verts, *args, **kwargs)
 
         # Randomly flip track direction
@@ -530,7 +518,7 @@ if __name__ == '__main__':
     t = Track.generate(2.0, hw_ratio=0.7, seed=None,
                         spikeyness=0.06, nb_checkpoints=500, irregularity=0.9)
     img = t.render(ppm=1000)
-    plt.subplot(3, 3, 1)
+    # plt.subplot(3, 3, 1)
     plt.imshow(img)
     plt.axis("off")
     # plt.tight_layout()

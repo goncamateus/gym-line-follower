@@ -147,8 +147,8 @@ class LineFollowerEnv(gym.Env):
         if self.preset_track:
             self.track = self.preset_track
         else:
-            self.track = Track.generate(1.75, hw_ratio=0.7, seed=None if self.randomize and do_rand else 4125,
-                                        spikeyness=0.06, nb_checkpoints=500, render_params=self.track_render_params)
+            self.track = Track.generate(1.75, hw_ratio=0.75, seed=None if self.randomize and do_rand else 4125,
+                                        spikeyness=0.15, nb_checkpoints=500, irregularity=0.75, render_params=self.track_render_params)
 
         start_yaw = self.track.start_angle
         if self.randomize and do_rand:
@@ -410,7 +410,7 @@ class LineFollowerGoalEnv(LineFollowerEnv):
             return ret
         else:
             return -d
-    
+
     def _reset(self, do_rand=False):
         self.step_counter = 0
         self.config.randomize()
@@ -426,8 +426,8 @@ class LineFollowerGoalEnv(LineFollowerEnv):
         if self.preset_track:
             self.track = self.preset_track
         else:
-            self.track = Track.generate(1.75, hw_ratio=0.7, seed=None if self.randomize and do_rand else 4125,
-                                        spikeyness=0.06, nb_checkpoints=500, render_params=self.track_render_params)
+            self.track = Track.generate(1.75, hw_ratio=0.75, seed=None if self.randomize and do_rand else 4125,
+                                        spikeyness=0.15, nb_checkpoints=500, irregularity=0.75, render_params=self.track_render_params)
 
         start_yaw = self.track.start_angle
         if self.randomize and do_rand:
