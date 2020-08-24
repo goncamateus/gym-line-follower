@@ -208,7 +208,7 @@ class Track:
         # Randomly flip track direction
         # np.random.seed(seed)
         # if np.random.choice([True, False]):
-        #     pts = np.flip(pts, axis=0)
+        pts = np.flip(pts, axis=0)
         return cls(pts, *args, **kwargs)
 
     @classmethod
