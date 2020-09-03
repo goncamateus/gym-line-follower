@@ -52,7 +52,8 @@ class Segment:
 def get_curve(points, **kw):
     segments = []
     for i in range(len(points) - 1):
-        seg = Segment(points[i, :2], points[i + 1, :2], points[i, 2], points[i + 1, 2], **kw)
+        seg = Segment(points[i, :2], points[i + 1, :2],
+                      points[i, 2], points[i + 1, 2], **kw)
         segments.append(seg)
     curve = np.concatenate([s.curve for s in segments])
     return segments, curve
@@ -76,7 +77,7 @@ def get_bezier_curve(a, rad=0.2, edgy=0):
     a = np.append(a, np.atleast_2d(a[0, :]), axis=0)
     d = np.diff(a, axis=0)
     ang = np.arctan2(d[:, 1], d[:, 0])
-    f = lambda ang: (ang >= 0) * ang + (ang < 0) * (ang + 2 * np.pi)
+    def f(ang): return (ang >= 0) * ang + (ang < 0) * (ang + 2 * np.pi)
     ang = f(ang)
     ang1 = ang
     ang2 = np.roll(ang, 1)
@@ -146,7 +147,8 @@ class Track:
         l = LineString(pts).length
         n = int(l / 3e-3)  # Get number of points for 3 mm spacing
 
-        self.pts = interpolate_points(np.array(pts), n)  # interpolate points to get the right spacing
+        # interpolate points to get the right spacing
+        self.pts = interpolate_points(np.array(pts), n)
         self.x = self.pts[:, 0]
         self.y = self.pts[:, 1]
 
@@ -166,7 +168,8 @@ class Track:
         self.progress = 0.
         self.progress_idx = 0
         self.nb_checkpoints = nb_checkpoints
-        self.checkpoints = [i * (self.length / self.nb_checkpoints) for i in range(1, self.nb_checkpoints + 1)]
+        self.checkpoints = [i * (self.length / self.nb_checkpoints)
+                            for i in range(1, self.nb_checkpoints + 1)]
         self.next_checkpoint_idx = 0
         self.done = False
 
@@ -185,7 +188,8 @@ class Track:
         random.seed(seed)
         upscale = 1000.  # upscale so curve gen fun works
         r = upscale * approx_width / 2.
-        pts = generate_polygon(0, 0, r, irregularity=irregularity, spikeyness=spikeyness, numVerts=num_verts)
+        pts = generate_polygon(
+            0, 0, r, irregularity=irregularity, spikeyness=spikeyness, numVerts=num_verts)
         pts = np.array(pts)
         # Generate curve with points
         x, y, _ = get_bezier_curve(pts, rad=0.4, edgy=0)
@@ -219,7 +223,7 @@ class Track:
         points.append(points[0])  # Close the loop
         points = interpolate_points(points, 1000)
         return cls(points, *args, **kwargs)
-    
+
     def _render(self, w=3., h=2., ppm=1500, line_thickness=0.015, save=None, line_color="black",
                 background="white", line_opacity=0.8, dashed=False):
         """
@@ -245,15 +249,20 @@ class Track:
         if isinstance(background, str):
             background = background.lower()
             if background == "wood":
-                bg = cv2.imread(os.path.join(root_dir, "track_textures", "wood.jpg"))
+                bg = cv2.imread(os.path.join(
+                    root_dir, "track_textures", "wood.jpg"))
             elif background == "wood_2":
-                bg = cv2.imread(os.path.join(root_dir, "track_textures", "wood_2.jpg"))
+                bg = cv2.imread(os.path.join(
+                    root_dir, "track_textures", "wood_2.jpg"))
             elif background == "concrete":
-                bg = cv2.imread(os.path.join(root_dir, "track_textures", "concrete.jpg"))
+                bg = cv2.imread(os.path.join(
+                    root_dir, "track_textures", "concrete.jpg"))
             elif background == "brick":
-                bg = cv2.imread(os.path.join(root_dir, "track_textures", "brick.jpg"))
+                bg = cv2.imread(os.path.join(
+                    root_dir, "track_textures", "brick.jpg"))
             elif background == "checkerboard":
-                bg = cv2.imread(os.path.join(root_dir, "track_textures", "checkerboard.jpg"))
+                bg = cv2.imread(os.path.join(
+                    root_dir, "track_textures", "checkerboard.jpg"))
             elif background == "white":
                 background_bgr = (255, 255, 255)
             elif background == "gray":
@@ -267,7 +276,8 @@ class Track:
                 bg[:, :, 1] *= background_bgr[1]
                 bg[:, :, 2] *= background_bgr[2]
             else:
-                bg = cv2.resize(bg, (w_res, h_res), interpolation=cv2.INTER_LINEAR)
+                bg = cv2.resize(bg, (w_res, h_res),
+                                interpolation=cv2.INTER_LINEAR)
 
         elif isinstance(background, tuple):
             bg = np.ones((h_res, w_res, 3), dtype=np.uint8)
@@ -364,7 +374,8 @@ class Track:
 
         # Find track angle
         norm = np.linalg.norm(vect)
-        vect = (vect / norm) if norm > 0.0 else np.array([1., 0])  # normalize vector to unit length
+        # normalize vector to unit length
+        vect = (vect / norm) if norm > 0.0 else np.array([1., 0])
         return vect
 
     def angle_at_index(self, idx):
@@ -431,7 +442,8 @@ class Track:
             first = idx2
             second = idx1
         string_1 = LineString(self.pts[first:second+1])
-        string_2 = LineString(np.concatenate((self.pts[0:first+1], self.pts[second:])))
+        string_2 = LineString(np.concatenate(
+            (self.pts[0:first+1], self.pts[second:])))
         len_1 = string_1.length
         len_2 = string_2.length
 
@@ -493,7 +505,8 @@ class Track:
             return 0
         if position > self.progress:
             self.progress = position
-            self.progress_idx = int(round((self.progress / self.length) * len(self.pts)))
+            self.progress_idx = int(
+                round((self.progress / self.length) * len(self.pts)))
         ret = 0
         while self.progress >= self.checkpoints[self.next_checkpoint_idx]:
             self.next_checkpoint_idx += 1
@@ -515,8 +528,8 @@ if __name__ == '__main__':
     # plt.show()
 
     # for i in range(9):
-    t = Track.generate(2.0, hw_ratio=0.7, seed=None,
-                        spikeyness=0.06, nb_checkpoints=500, irregularity=0.9)
+    t = Track.generate(1.75, hw_ratio=0.75, seed=None,
+                       spikeyness=0.06, nb_checkpoints=500)
     img = t.render(ppm=1000)
     # plt.subplot(3, 3, 1)
     plt.imshow(img)
@@ -524,4 +537,3 @@ if __name__ == '__main__':
     # plt.tight_layout()
     plt.savefig("track_generator.png", dpi=300)
     plt.show()
-
