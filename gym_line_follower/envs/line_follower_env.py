@@ -147,6 +147,10 @@ class LineFollowerEnv(gym.Env):
         if self.preset_track:
             self.track = self.preset_track
         else:
+            # facil 
+            # self.track = Track.generate(1.75, hw_ratio=0.7, seed=None if self.randomize and do_rand else 4125,
+            #                             spikeyness=0.06, nb_checkpoints=500, render_params=self.track_render_params)
+            # dificil
             self.track = Track.generate(1.75, hw_ratio=0.75, seed=None if self.randomize and do_rand else 4125,
                                         spikeyness=0.15, nb_checkpoints=500, irregularity=0.75, render_params=self.track_render_params)
 
@@ -387,8 +391,8 @@ class LineFollowerCameraEnv(LineFollowerEnv):
 
 class LineFollowerGoalEnv(LineFollowerEnv):
 
-    def __init__(self, reward_type='sparse', distance_threshold=0.01):
-        super(LineFollowerGoalEnv, self).__init__()
+    def __init__(self, reward_type='sparse', distance_threshold=0.01, **kwargs):
+        super(LineFollowerGoalEnv, self).__init__(**kwargs)
         self.reward_type = reward_type
         self.distance_threshold = distance_threshold
 
@@ -411,7 +415,7 @@ class LineFollowerGoalEnv(LineFollowerEnv):
         else:
             return -d
 
-    def _reset(self, do_rand=False):
+    def _reset(self, do_rand=True):
         self.step_counter = 0
         self.config.randomize()
 
@@ -426,6 +430,10 @@ class LineFollowerGoalEnv(LineFollowerEnv):
         if self.preset_track:
             self.track = self.preset_track
         else:
+            # facil 
+            # self.track = Track.generate(1.75, hw_ratio=0.7, seed=None if self.randomize and do_rand else 4125,
+            #                             spikeyness=0.06, nb_checkpoints=500, render_params=self.track_render_params)
+            # dificil
             self.track = Track.generate(1.75, hw_ratio=0.75, seed=None if self.randomize and do_rand else 4125,
                                         spikeyness=0.15, nb_checkpoints=500, irregularity=0.75, render_params=self.track_render_params)
 
